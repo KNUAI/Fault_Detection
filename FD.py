@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
-from data.data_loader import read_data
+from data.data_loader import read_data, read_all_data
 from models.model import AE, CAE, CAE2, LSTM, GRU, SAAE
 
 import argparse
