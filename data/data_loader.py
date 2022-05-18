@@ -99,7 +99,7 @@ def read_all_data(data_path, max_len):
 
     all_data = equal(all_data, max_len)
 
-    all_dataset = SemiDataset_test(all_data, all_label)
+    all_dataset = FDDataset_test(all_data, all_label)
     all_loader = DataLoader(all_dataset, batch_size=1)
 
     return all_loader
