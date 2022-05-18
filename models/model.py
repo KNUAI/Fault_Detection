@@ -205,8 +205,12 @@ class CAE2(nn.Module):
 class LSTM(nn.Module):
     def __init__(self, input_size, latent_size, max_len, num_layers):
         super(LSTM, self).__init__()
+        self.input_size = input_size
         self.max_len = max_len
-        self.rnn1 = nn.LSTM(input_size, latent_size*4, num_layers, batch_first=True)
+        self.linear1 = nn.Sequential(
+            nn.Linear(input_size*max_len, latent_size*4 * max_len),
+            nn.LeakyReLU(0.9)
+        )
         self.rnn2 = nn.LSTM(latent_size*4, latent_size*2, num_layers, batch_first=True)
         self.linear3 = nn.Sequential(
             nn.Linear(latent_size*2*max_len, latent_size),
@@ -217,25 +221,31 @@ class LSTM(nn.Module):
             nn.LeakyReLU(0.9)
         )
         self.rnn5 = nn.LSTM(latent_size*2, latent_size*4, num_layers, batch_first=True)
-        self.rnn6 = nn.LSTM(latent_size*4, input_size, num_layers, batch_first=True)
+        self.linear6 = nn.Sequential(
+            nn.Linear(latent_size*4 * max_len, input_size*max_len),
+            nn.LeakyReLU(0.9)
+        )
 
     def forward(self, x):
-        x, _ = self.rnn1(x)
-        _, (h,c) = self.rnn2(x)
-        h = h[-1,:,:].unsqueeze(-2).repeat(1,self.max_len,1)
-        x = self.linear3(h.reshape(h.shape[0], -1))
+        x = self.linear1(x.view(x.shape[0], -1))
+        x, _ = self.rnn2(x.view(x.shape[0], self.max_len, -1))
+        x = self.linear3(x.reshape(x.shape[0], -1))
         x = self.linear4(x)
         x, _ = self.rnn5(x.view(x.shape[0], self.max_len, -1))
-        out, _ = self.rnn6(x)  #out : (batch_size, sequence_len, hidden_size)
+        x = self.linear6(x.reshape(x.shape[0], -1))
 
-        return out
+        return x.view(-1, self.max_len, self.input_size)
 
 class GRU(nn.Module):
     def __init__(self, input_size, latent_size, max_len, num_layers):
         super(GRU, self).__init__()
+        self.input_size = input_size
         self.max_len = max_len
-        self.rnn1 = nn.GRU(input_size, latent_size*4, self.num_layers, batch_first=True)
-        self.rnn2 = nn.GRU(latent_size*4, latent_size*2, self.num_layers, batch_first=True)
+        self.linear1 = nn.Sequential(
+            nn.Linear(input_size*max_len, latent_size*4 * max_len),
+            nn.LeakyReLU(0.9)
+        )
+        self.rnn2 = nn.GRU(latent_size*4, latent_size*2, num_layers, batch_first=True)
         self.linear3 = nn.Sequential(
             nn.Linear(latent_size*2*max_len, latent_size),
             nn.LeakyReLU(0.9)
@@ -244,19 +254,21 @@ class GRU(nn.Module):
             nn.Linear(latent_size, latent_size*2*max_len),
             nn.LeakyReLU(0.9)
         )
-        self.rnn5 = nn.GRU(latent_size*2, latent_size*4, self.num_layers, batch_first=True)
-        self.rnn6 = nn.GRU(latent_size*4, input_size, self.num_layers, batch_first=True)
+        self.rnn5 = nn.GRU(latent_size*2, latent_size*4, num_layers, batch_first=True)
+        self.linear6 = nn.Sequential(
+            nn.Linear(latent_size*4 * max_len, input_size*max_len),
+            nn.LeakyReLU(0.9)
+        )
 
     def forward(self, x):
-        x, _ = self.rnn1(x)
-        _, h = self.rnn2(x)
-        h = h[-1,:,:].unsqueeze(-2).repeat(1,self.max_len,1)
-        x = self.linear3(h.reshape(h.shape[0], -1))
+        x = self.linear1(x.view(x.shape[0], -1))
+        x, _ = self.rnn2(x.view(x.shape[0], self.max_len, -1))
+        x = self.linear3(x.reshape(x.shape[0], -1))
         x = self.linear4(x)
         x, _ = self.rnn5(x.view(x.shape[0], self.max_len, -1))
-        out, _ = self.rnn6(x)  #out : (batch_size, sequence_len, hidden_size)
+        x = self.linear6(x.reshape(x.shape[0], -1))
 
-        return out
+        return x.view(-1, self.max_len, self.input_size)
 
 
 
