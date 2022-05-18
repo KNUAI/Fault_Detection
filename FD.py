@@ -50,8 +50,9 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("Let's use", torch.cuda.device_count(), "GPUs!")
 print('device:', device)
 
+data_path = f'./data/dataset/{args.data}.csv'
 #data_split to train/valid/test
-train_loader, valid_loader, test_loader, input_size, max_len = read_data(f'./data/dataset/{args.data}.csv', args.batch_size, args.fold)
+train_loader, valid_loader, test_loader, input_size, max_len = read_data(data_path, args.batch_size, args.fold)
 
 #model
 if args.model == 'SAAE':
