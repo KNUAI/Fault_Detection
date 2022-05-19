@@ -23,7 +23,7 @@ parser.add_argument('--latent_size', type=int, default=128, help='dimension of l
 parser.add_argument('--threshold_rate', type=float, default=1, help='threshold_rate')
 parser.add_argument('--n_layer', type=int, default=1, help='n_layers of rnn model')
 parser.add_argument('--n_head', type=int, default=1, help='n_head of multihead_attention')
-parser.add_argument('--epoch', type=int, default=100, help='epoch')
+parser.add_argument('--epoch', type=int, default=200, help='epoch')
 parser.add_argument('--batch_size', type=int, default=32, help='batch_size')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning_rate')
 parser.add_argument('--use_all', action='store_true', help='use all data for detection', default=False)
