@@ -2,83 +2,51 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from utils.masking import TriangularCausalMask, ProbMask
-from models.encoder import Encoder, EncoderLayer, ConvLayer
-from models.decoder import Decoder, DecoderLayer, DeconvLayer
-from models.attn import FullAttention, ProbAttention, AttentionLayer
-from models.embed import DataEmbedding
-
 class SAAE(nn.Module):
-    def __init__(self, enc_in, dec_in, c_out, seq_len,
-                factor=5, d_model=512, n_heads=8, e_layers=3, d_layers=2, d_ff=512, 
-                dropout=0.0, attn='prob', activation='gelu', 
-                output_attention = False, distil=True, mix=True,
-                device=torch.device('cuda:0')):
+    def __init__(self, input_size, latent_size, max_len, num_heads):
         super(SAAE, self).__init__()
-        self.seq_len = seq_len
-        self.attn = attn
-        self.output_attention = output_attention
-
-        # Encoding
-        self.enc_embedding = DataEmbedding(enc_in, d_model, dropout)
-        # Attention
-        Attn = ProbAttention if attn=='prob' else FullAttention
-        # Encoder
-        self.encoder = Encoder(
-            [
-                EncoderLayer(
-                    AttentionLayer(Attn(False, factor, attention_dropout=dropout, output_attention=output_attention), 
-                                d_model, n_heads, mix=False),
-                    d_model,
-                    d_ff,
-                    dropout=dropout,
-                    activation=activation
-                ) for l in range(e_layers)
-            ],
-            [
-                ConvLayer(
-                    d_model
-                ) for l in range(e_layers-1)
-            ] if distil else None,
-            norm_layer=torch.nn.LayerNorm(d_model)
+        self.input_size = input_size
+        self.max_len = max_len
+        self.linear1 = nn.Sequential(
+            nn.Linear(input_size*max_len, latent_size*2 * max_len),
+            nn.LeakyReLU(0.9)
         )
-        # Decoder
-        self.decoder = Decoder(
-            [
-                DecoderLayer(
-                    AttentionLayer(Attn(False, factor, attention_dropout=dropout, output_attention=output_attention), 
-                                d_model, n_heads, mix=False),
-                    d_model,
-                    d_ff,
-                    dropout=dropout,
-                    activation=activation
-                ) for l in range(e_layers)
-            ],
-            [
-                DeconvLayer(
-                    d_model
-                ) for l in range(e_layers-1)
-            ] if distil else None,
-            norm_layer=torch.nn.LayerNorm(d_model)
+        self.linear2 = nn.Sequential(
+            nn.Linear(latent_size*2 * max_len, latent_size*max_len),
+            nn.LeakyReLU(0.9)
         )
-        # self.end_conv1 = nn.Conv1d(in_channels=seq_len, out_channels=seq_len, kernel_size=1, bias=True)
-        # self.end_conv2 = nn.Conv1d(in_channels=d_model, out_channels=c_out, kernel_size=1, bias=True)
-        self.projection = nn.Linear(d_model, c_out, bias=True)
+        self.sa3 = nn.MultiheadAttention(latent_size, num_heads)
+        self.linear4 = nn.Sequential(
+            nn.Linear(latent_size*max_len, latent_size),
+            nn.LeakyReLU(0.9)
+        )
+        self.linear5 = nn.Sequential(
+            nn.Linear(latent_size, latent_size*max_len),
+            nn.LeakyReLU(0.9)
+        )
+        self.sa6 = nn.MultiheadAttention(latent_size, num_heads)
+        self.linear7 = nn.Sequential(
+            nn.Linear(latent_size*max_len, latent_size*2 * max_len),
+            nn.LeakyReLU(0.9)
+        )
+        self.linear8 = nn.Sequential(
+            nn.Linear(latent_size*2 * max_len, input_size*max_len),
+            nn.LeakyReLU(0.9)
+        )
 
-    def forward(self, x_enc, 
-                enc_self_mask=None, dec_self_mask=None, dec_enc_mask=None):
-        enc_out = self.enc_embedding(x_enc)
-        enc_out, attns = self.encoder(enc_out, attn_mask=enc_self_mask)
+    def forward(self, x):
+        x = self.linear1(x.view(-1, self.input_size*self.max_len))
+        x = self.linear2(x)
+        x = x.view(x.shape[0], self.max_len, -1)
+        x, _ = self.sa3(x,x,x)
+        x = self.linear4(x.view(x.shape[0], -1))
+        x = self.linear5(x)
+        x = x.view(x.shape[0], self.max_len, -1)
+        x, _ = self.sa6(x,x,x)
+        x = self.linear7(x.view(x.shape[0], -1))
+        x = self.linear8(x)
 
-        dec_out, de_attns = self.decoder(enc_out, attn_mask=dec_self_mask)
-        dec_out = self.projection(dec_out)
-
-        # dec_out = self.end_conv1(dec_out)
-        # dec_out = self.end_conv2(dec_out.transpose(2,1)).transpose(1,2)
-        if self.output_attention:
-            return dec_out[:,-self.seq_len:,:], attns
-        else:
-            return dec_out[:,-self.seq_len:,:] # [B, L, D]
+        return x.view(-1, self.max_len, self.input_size)
 
 class AE(nn.Module):
     def __init__(self, input_size, latent_size, max_len):
@@ -208,21 +176,21 @@ class LSTM(nn.Module):
         self.input_size = input_size
         self.max_len = max_len
         self.linear1 = nn.Sequential(
-            nn.Linear(input_size*max_len, latent_size*4 * max_len),
+            nn.Linear(input_size*max_len, latent_size*2 * max_len),
             nn.LeakyReLU(0.9)
         )
-        self.rnn2 = nn.LSTM(latent_size*4, latent_size*2, num_layers, batch_first=True)
+        self.rnn2 = nn.LSTM(latent_size*2, latent_size, num_layers, batch_first=True)
         self.linear3 = nn.Sequential(
-            nn.Linear(latent_size*2*max_len, latent_size),
+            nn.Linear(latent_size*max_len, latent_size),
             nn.LeakyReLU(0.9)
         )
         self.linear4 = nn.Sequential(
-            nn.Linear(latent_size, latent_size*2*max_len),
+            nn.Linear(latent_size, latent_size*max_len),
             nn.LeakyReLU(0.9)
         )
-        self.rnn5 = nn.LSTM(latent_size*2, latent_size*4, num_layers, batch_first=True)
+        self.rnn5 = nn.LSTM(latent_size, latent_size*2, num_layers, batch_first=True)
         self.linear6 = nn.Sequential(
-            nn.Linear(latent_size*4 * max_len, input_size*max_len),
+            nn.Linear(latent_size*2 * max_len, input_size*max_len),
             nn.LeakyReLU(0.9)
         )
 
@@ -242,21 +210,21 @@ class GRU(nn.Module):
         self.input_size = input_size
         self.max_len = max_len
         self.linear1 = nn.Sequential(
-            nn.Linear(input_size*max_len, latent_size*4 * max_len),
+            nn.Linear(input_size*max_len, latent_size*2 * max_len),
             nn.LeakyReLU(0.9)
         )
-        self.rnn2 = nn.GRU(latent_size*4, latent_size*2, num_layers, batch_first=True)
+        self.rnn2 = nn.GRU(latent_size*2, latent_size, num_layers, batch_first=True)
         self.linear3 = nn.Sequential(
-            nn.Linear(latent_size*2*max_len, latent_size),
+            nn.Linear(latent_size*max_len, latent_size),
             nn.LeakyReLU(0.9)
         )
         self.linear4 = nn.Sequential(
-            nn.Linear(latent_size, latent_size*2*max_len),
+            nn.Linear(latent_size, latent_size*max_len),
             nn.LeakyReLU(0.9)
         )
-        self.rnn5 = nn.GRU(latent_size*2, latent_size*4, num_layers, batch_first=True)
+        self.rnn5 = nn.GRU(latent_size, latent_size*2, num_layers, batch_first=True)
         self.linear6 = nn.Sequential(
-            nn.Linear(latent_size*4 * max_len, input_size*max_len),
+            nn.Linear(latent_size*2 * max_len, input_size*max_len),
             nn.LeakyReLU(0.9)
         )
 

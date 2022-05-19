@@ -19,14 +19,15 @@ parser.add_argument('--seed', type=int, default=117, help='seed')
 parser.add_argument('--data', type=str, default='D1', help='data:: D1, D2')
 parser.add_argument('--model', type=str, default='AE', help='model')
 parser.add_argument('--fold', type=int, default=5, help='5-fold:: 1, 2, 3, 4, 5')
-parser.add_argument('--latent_size', type=int, default=256, help='dimension of latent vector')
+parser.add_argument('--latent_size', type=int, default=128, help='dimension of latent vector')
 parser.add_argument('--threshold_rate', type=int, default=1, help='threshold_rate')
 parser.add_argument('--n_layer', type=int, default=1, help='n_layers of rnn model')
-parser.add_argument('--epoch', type=int, default=10, help='epoch')
-parser.add_argument('--batch_size', type=int, default=128, help='batch_size')
+parser.add_argument('--n_head', type=int, default=1, help='n_head of multihead_attention')
+parser.add_argument('--epoch', type=int, default=100, help='epoch')
+parser.add_argument('--batch_size', type=int, default=32, help='batch_size')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning_rate')
 parser.add_argument('--use_all', action='store_true', help='use all data for detection', default=False)
-parser.add_argument('--patience', type=int, default=5, help='patience of early_stopping')
+parser.add_argument('--patience', type=int, default=3, help='patience of early_stopping')
 parser.add_argument('--gpus', type=str, default='0', help='gpu numbers')
 
 args = parser.parse_args()
@@ -56,7 +57,7 @@ train_loader, valid_loader, test_loader, input_size, max_len = read_data(data_pa
 
 #model
 if args.model == 'SAAE':
-    model = SAAE(input_size, input_size, input_size, max_len, n_heads = 1)#### #### ####
+    model = SAAE(input_size, args.latent_size, max_len, args.n_head)
 elif args.model == 'AE':
     model = AE(input_size, args.latent_size, max_len)
 elif args.model == 'CAE':
@@ -122,7 +123,7 @@ for epoch in range(args.epoch):
     if np.mean(valid_loss) < stop_loss:
         stop_loss = np.mean(valid_loss)
         print('best_loss:: {:.4f}'.format(stop_loss))
-        torch.save(model.state_dict(), f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_n_layer_{args.n_layer}_batch_{args.batch_size}_lr_{args.lr}_.pth')
+        torch.save(model.state_dict(), f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}_.pth')
         count = 0
     else:
         count += 1
@@ -132,7 +133,7 @@ for epoch in range(args.epoch):
             print('Ealry stopping')
             break
 
-model.load_state_dict(torch.load(f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_n_layer_{args.n_layer}_batch_{args.batch_size}_lr_{args.lr}_.pth'))
+model.load_state_dict(torch.load(f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}_.pth'))
 
 #setting_threshold
 loss_list = []
