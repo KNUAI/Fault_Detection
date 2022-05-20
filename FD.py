@@ -7,6 +7,7 @@ import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
+from mlxtend.plotting import plot_confusion_matrix
 
 from data.data_loader import read_data, read_all_data
 from models.model import AE, CAE, CAE2, LSTM, GRU, SAAE
@@ -123,7 +124,7 @@ for epoch in range(args.epoch):
     if np.mean(valid_loss) < stop_loss:
         stop_loss = np.mean(valid_loss)
         print('best_loss:: {:.4f}'.format(stop_loss))
-        torch.save(model.state_dict(), f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}_.pth')
+        torch.save(model.state_dict(), f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.pth')
         count = 0
     else:
         count += 1
@@ -133,7 +134,7 @@ for epoch in range(args.epoch):
             print('Ealry stopping')
             break
 
-model.load_state_dict(torch.load(f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}_.pth'))
+model.load_state_dict(torch.load(f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.pth'))
 
 #setting_threshold
 loss_list = []
@@ -163,17 +164,17 @@ with torch.no_grad():
         output = model(data)
         loss = criterion(output, target)
 
-        print(f'\nTest set: Loss: {loss:.4f}')
+        #print(f'\nTest set: Loss: {loss:.4f}')
 
         if loss > threshold:
             logits = 1
-            print(i, 'th wafer is defective.')
+            #print(i, 'th wafer is defective.')
         else:
             logits = 0
-            print(i, 'th wafer is OK')
-        
-        if label == 1:
-            print(i, 'th wafer is originally defective!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            #print(i, 'th wafer is OK')
+            if label == 1:
+                print(i, 'th wafer is originally defective!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                print('loss:: ', loss)
         
         y_true.append(label)
         y_pred.append(logits)
@@ -189,6 +190,10 @@ if args.use_all == True:
     all_acc_sum = 0
     a_true = []
     a_pred = []
+    tp_loss = []
+    tn_loss = []
+    fp_loss = []
+    fn_loss = []
     with torch.no_grad():
         model.eval()
         for i, (data, target, label) in enumerate(all_loader):
@@ -198,15 +203,24 @@ if args.use_all == True:
             output = model(data)
             loss = criterion(output, target)
     
-            print(f'\nTest set: Loss: {loss:.4f}')
+            #print(f'\nTest set: Loss: {loss:.4f}')
     
             if loss > threshold:
                 logits = 1
-                print(i, 'th wafer is defective.')
+                #print(i, 'th wafer is defective.')
+                if label == 1:
+                    tn_loss.append(loss.detach().cpu().numpy())
+                else: fn_loss.append(loss.detach().cpu().numpy())
             else:
                 logits = 0
-                print(i, 'th wafer is OK')
-            
+                #print(i, 'th wafer is OK')
+                if label == 1:
+                    fp_loss.append(loss.detach().cpu().numpy())
+                    print(i, 'th wafer is originally defective!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('loss:: ', loss)
+                else:
+                    tp_loss.append(loss.detach().cpu().numpy())
+
             a_true.append(label)
             a_pred.append(logits)
             
@@ -214,6 +228,29 @@ if args.use_all == True:
         print(f'  all Accuracy: {100 * all_acc_sum / len(all_loader.dataset):.4f}')
         tp, fn, fp, tn = confusion_matrix(a_true, a_pred).ravel()
         print('confusion_matrix:: ', tn, fp, tp, fn)
+
+    #figure
+    if not os.path.exists('./picture'):
+        os.makedirs('./picture')
+    fig, ax = plot_confusion_matrix(np.array([[tp, fn],
+                                              [fp, tn]]))
+
+    plt.savefig(f'./picture/confusion_matrix_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
+    plt.close()
+
+    tp_loss = np.array(tp_loss)
+    tn_loss = np.array(tn_loss)
+    fp_loss = np.array(fp_loss)
+    fn_loss = np.array(fn_loss)
+
+    plt.hist(tp_loss, bins = 1000, color='c', histtype='step', label = 'true_positive')
+    plt.hist(tn_loss, bins = 1000, color='y', histtype='step', label = 'true_negative')
+    plt.hist(fp_loss, bins = 1000, color='r', histtype='step', label = 'false_positive')
+    plt.hist(fn_loss, bins = 1000, color='g', histtype='step', label = 'false_negative')
+    plt.legend()
+
+    plt.savefig(f'./picture/hist_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
+    plt.close()
 
 
 
