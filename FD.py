@@ -243,10 +243,10 @@ if args.use_all == True:
     fp_loss = np.array(fp_loss)
     fn_loss = np.array(fn_loss)
 
-    plt.hist(tp_loss, bins = 1000, color='b', histtype='step', label = 'true_positive')
-    plt.hist(tn_loss, bins = 1000, color='y', histtype='step', label = 'true_negative')
-    plt.hist(fp_loss, bins = 1000, color='r', histtype='step', label = 'false_positive')
-    plt.hist(fn_loss, bins = 1000, color='g', histtype='step', label = 'false_negative')
+    plt.hist(tp_loss, bins = 500, color='b', histtype='step', label = 'true_positive')
+    plt.hist(tn_loss, bins = 500, color='y', histtype='step', label = 'true_negative')
+    plt.hist(fp_loss, bins = 500, color='r', histtype='step', label = 'false_positive')
+    plt.hist(fn_loss, bins = 500, color='g', histtype='step', label = 'false_negative')
     plt.legend()
 
     plt.savefig(f'./picture/hist_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
