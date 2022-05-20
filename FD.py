@@ -243,7 +243,7 @@ if args.use_all == True:
     fp_loss = np.array(fp_loss)
     fn_loss = np.array(fn_loss)
 
-    plt.hist(tp_loss, bins = 1000, color='c', histtype='step', label = 'true_positive')
+    plt.hist(tp_loss, bins = 1000, color='b', histtype='step', label = 'true_positive')
     plt.hist(tn_loss, bins = 1000, color='y', histtype='step', label = 'true_negative')
     plt.hist(fp_loss, bins = 1000, color='r', histtype='step', label = 'false_positive')
     plt.hist(fn_loss, bins = 1000, color='g', histtype='step', label = 'false_negative')
