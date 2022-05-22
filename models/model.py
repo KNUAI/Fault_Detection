@@ -236,7 +236,7 @@ class CRAE2(nn.Module):
             print('No RNN Model')
 
     def forward(self, x):
-        x = max_pool1d(self.conv1(x.permute(0,2,1)), 2)
+        x = F.max_pool1d(self.conv1(x.permute(0,2,1)), 2)
         x, _ = self.rnn2(x.permute(0,2,1))
         x = self.linear3(x.reshape(x.shape[0], -1))
         x = self.linear4(x)
