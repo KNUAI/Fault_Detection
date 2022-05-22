@@ -10,7 +10,7 @@ from sklearn.metrics import confusion_matrix
 from mlxtend.plotting import plot_confusion_matrix
 
 from data.data_loader import read_data, read_all_data
-from models.model import AE, CAE, CAE2, LSTM, GRU, SAAE
+from models.model import AE, CAE, CAE2, RAE, CRAE, CRAE2
 
 import argparse
 
@@ -23,10 +23,10 @@ parser.add_argument('--fold', type=int, default=5, help='5-fold:: 1, 2, 3, 4, 5'
 parser.add_argument('--latent_size', type=int, default=128, help='dimension of latent vector')
 parser.add_argument('--threshold_rate', type=float, default=1, help='threshold_rate')
 parser.add_argument('--n_layer', type=int, default=1, help='n_layers of rnn model')
-parser.add_argument('--n_head', type=int, default=1, help='n_head of multihead_attention')
 parser.add_argument('--epoch', type=int, default=200, help='epoch')
 parser.add_argument('--batch_size', type=int, default=32, help='batch_size')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning_rate')
+parser.add_argument('--r_model', type=str, default='LSTM', help='rnn model')
 parser.add_argument('--use_all', action='store_true', help='use all data for detection', default=False)
 parser.add_argument('--patience', type=int, default=3, help='patience of early_stopping')
 parser.add_argument('--gpus', type=str, default='0', help='gpu numbers')
@@ -57,18 +57,18 @@ data_path = f'./data/dataset/{args.data}.csv'
 train_loader, valid_loader, test_loader, input_size, max_len = read_data(data_path, args.batch_size, args.fold)
 
 #model
-if args.model == 'SAAE':
-    model = SAAE(input_size, args.latent_size, max_len, args.n_head)
-elif args.model == 'AE':
+if args.model == 'AE':
     model = AE(input_size, args.latent_size, max_len)
 elif args.model == 'CAE':
     model = CAE(input_size, args.latent_size, max_len)
 elif args.model == 'CAE2':
     model = CAE2(input_size, args.latent_size, max_len)
-elif args.model == 'LSTM':
-    model = LSTM(input_size, args.latent_size, max_len, args.n_layer)
-elif args.model == 'GRU':
-    model = GRU(input_size, args.latent_size, max_len, args.n_layer)
+elif args.model == 'RAE':
+    model = RAE(input_size, args.latent_size, max_len, args.n_layer, args.r_model)
+elif args.model == 'CRAE':
+    model = CRAE(input_size, args.latent_size, max_len, args.n_layer, args.r_model)
+elif args.model == 'CRAE2':
+    model = CRAE2(input_size, args.latent_size, max_len, args.n_layer, args.r_model)
 else:
     print('No Model')
     exit()
