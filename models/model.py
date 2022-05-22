@@ -148,7 +148,7 @@ class RAE(nn.Module):
         if r_model == 'LSTM':
             self.rnn2 = nn.LSTM(latent_size*2, latent_size, num_layers, batch_first=True)
             self.rnn5 = nn.LSTM(latent_size, latent_size*2, num_layers, batch_first=True)
-        elfi r_model == 'GRU':
+        elif r_model == 'GRU':
             self.rnn2 = nn.GRU(latent_size*2, latent_size, num_layers, batch_first=True)
             self.rnn5 = nn.GRU(latent_size, latent_size*2, num_layers, batch_first=True)
         else:
@@ -188,7 +188,7 @@ class CRAE(nn.Module):
         if r_model == 'LSTM':
             self.rnn2 = nn.LSTM(latent_size*2, latent_size, num_layers, batch_first=True)
             self.rnn5 = nn.LSTM(latent_size, latent_size*2, num_layers, batch_first=True)
-        elfi r_model == 'GRU':
+        elif r_model == 'GRU':
             self.rnn2 = nn.GRU(latent_size*2, latent_size, num_layers, batch_first=True)
             self.rnn5 = nn.GRU(latent_size, latent_size*2, num_layers, batch_first=True)
         else:
@@ -229,7 +229,7 @@ class CRAE2(nn.Module):
         if r_model == 'LSTM':
             self.rnn2 = nn.LSTM(latent_size*2, latent_size, num_layers, batch_first=True)
             self.rnn5 = nn.LSTM(latent_size, latent_size*2, num_layers, batch_first=True)
-        elfi r_model == 'GRU':
+        elif r_model == 'GRU':
             self.rnn2 = nn.GRU(latent_size*2, latent_size, num_layers, batch_first=True)
             self.rnn5 = nn.GRU(latent_size, latent_size*2, num_layers, batch_first=True)
         else:
