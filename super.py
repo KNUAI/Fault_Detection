@@ -178,20 +178,6 @@ fig, ax = plot_confusion_matrix(np.array([[tp, fn],
 plt.savefig(f'./picture/confusion_matrix_test_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_batch_{args.batch_size}_lr_{args.lr}.png')
 plt.close()
 
-tp_loss = np.array(tp_loss)
-tn_loss = np.array(tn_loss)
-fp_loss = np.array(fp_loss)
-fn_loss = np.array(fn_loss)
-
-plt.hist(tp_loss, bins = 10000, color='b', histtype='step', label = 'true_positive')
-plt.hist(tn_loss, bins = 10000, color='y', histtype='step', label = 'true_negative')
-plt.hist(fp_loss, bins = 10000, color='r', histtype='step', label = 'false_positive')
-plt.hist(fn_loss, bins = 10000, color='g', histtype='step', label = 'false_negative')
-plt.legend()
-
-plt.savefig(f'./picture/hist_test_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_batch_{args.batch_size}_lr_{args.lr}.png')
-plt.close()
-
 #all test
 if args.use_all == True:
     all_loader = read_all_data(data_path, max_len)
