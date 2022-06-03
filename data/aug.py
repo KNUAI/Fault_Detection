@@ -45,11 +45,11 @@ class superDataset(Dataset):
 def read_data(data_path, batch_size, fold):
     df = pd.read_csv(data_path)
 
-    num_augmented = len(list(set(df[df['is_test']==0]['MaterialID'].values)))//2
+    num_augmented = len(list(set(df[df['is_test']==0]['MaterialID'].values)))//len(list(set(df[df['target']==1]['MaterialID'].values)))
 
     augmented = []
     i = 0
-    for ID in [2866, 1807]:
+    for ID in list(set(df[df['target']==1]['MaterialID'].values)):
         for _ in range(num_augmented):
             tdata = df[df['MaterialID']==ID]
             tdata['MaterialID']=10000+i
@@ -114,11 +114,11 @@ def read_data(data_path, batch_size, fold):
 def read_all_data(data_path, max_len):
     df = pd.read_csv(data_path)
 
-    num_augmented = len(list(set(df[df['is_test']==0]['MaterialID'].values)))//2
+    num_augmented = len(list(set(df[df['is_test']==0]['MaterialID'].values)))//len(list(set(df[df['target']==1]['MaterialID'].values)))
 
     augmented = []
     i = 0
-    for ID in [2866, 1807]:
+    for ID in list(set(df[df['target']==1]['MaterialID'].values)):
         for _ in range(num_augmented):
             tdata = df[df['MaterialID']==ID]
             tdata['MaterialID']=10000+i
