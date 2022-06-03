@@ -175,7 +175,7 @@ if not os.path.exists('./picture'):
 fig, ax = plot_confusion_matrix(np.array([[tp, fn],
                                           [fp, tn]]))
 
-plt.savefig(f'./picture/confusion_matrix_test_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
+plt.savefig(f'./picture/confusion_matrix_test_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_batch_{args.batch_size}_lr_{args.lr}.png')
 plt.close()
 
 tp_loss = np.array(tp_loss)
@@ -189,7 +189,7 @@ plt.hist(fp_loss, bins = 10000, color='r', histtype='step', label = 'false_posit
 plt.hist(fn_loss, bins = 10000, color='g', histtype='step', label = 'false_negative')
 plt.legend()
 
-plt.savefig(f'./picture/hist_test_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
+plt.savefig(f'./picture/hist_test_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_batch_{args.batch_size}_lr_{args.lr}.png')
 plt.close()
 
 #all test
