@@ -124,7 +124,7 @@ for epoch in range(args.epoch):
     if np.mean(valid_loss) < stop_loss:
         stop_loss = np.mean(valid_loss)
         print('best_loss:: {:.4f}'.format(stop_loss))
-        torch.save(model.state_dict(), f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.pth')
+        torch.save(model.state_dict(), f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_batch_{args.batch_size}_lr_{args.lr}.pth')
         count = 0
     else:
         count += 1
@@ -134,7 +134,7 @@ for epoch in range(args.epoch):
             print('Ealry stopping')
             break
 
-model.load_state_dict(torch.load(f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.pth'))
+model.load_state_dict(torch.load(f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_batch_{args.batch_size}_lr_{args.lr}.pth'))
 
 #setting_threshold
 loss_list = []
