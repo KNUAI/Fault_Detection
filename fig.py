@@ -81,87 +81,37 @@ optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
 model.load_state_dict(torch.load(f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{1}_batch_{args.batch_size}_lr_{args.lr}.pth'))
 
-#setting_threshold
-loss_list = []
+#all test
+all_loader = read_all_data(data_path, max_len)
+all_acc_sum = 0
+red = []
+blue = []
 with torch.no_grad():
     model.eval()
-    for data, target in valid_loader:
+    for i, (data, target) in enumerate(all_loader):
         data = data.float().to(device)
-        target = target.float().to(device)
 
         output = model(data)
-        loss = criterion(output, target)
-        loss_list.append(loss)
+        loss = criterion(output, data)
 
-threshold = max(loss_list) * args.threshold_rate
-print('threshold:: ', threshold)
+        if target == 1:
+            red.append(loss.detach().cpu().numpy())
+        else:
+            blue.append(loss.detach().cpu().numpy())
 
-#all test
-if args.use_all == True:
-    all_loader = read_all_data(data_path, max_len)
-    all_acc_sum = 0
-    a_true = []
-    a_pred = []
-    tp_loss = []
-    tn_loss = []
-    fp_loss = []
-    fn_loss = []
-    with torch.no_grad():
-        model.eval()
-        for i, (data, target) in enumerate(all_loader):
-            data = data.float().to(device)
-    
-            output = model(data)
-            loss = criterion(output, data)
-    
-            #print(f'\nTest set: Loss: {loss:.4f}')
-    
-            if loss > threshold:
-                logits = 1
-                #print(i, 'th wafer is defective.')
-                if label == 1:
-                    tn_loss.append(loss.detach().cpu().numpy())
-                else: fn_loss.append(loss.detach().cpu().numpy())
-            else:
-                logits = 0
-                #print(i, 'th wafer is OK')
-                if label == 1:
-                    fp_loss.append(loss.detach().cpu().numpy())
-                    print(i, 'th wafer is originally defective!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-                    print('loss:: ', loss)
-                else:
-                    tp_loss.append(loss.detach().cpu().numpy())
+#figure
+if not os.path.exists('./picture'):
+    os.makedirs('./picture')
 
-            a_true.append(label)
-            a_pred.append(logits)
-            
-            all_acc_sum += np.equal(label, logits).sum()
-        print(f'  all Accuracy: {100 * all_acc_sum / len(all_loader.dataset):.4f}')
-        tp, fn, fp, tn = confusion_matrix(a_true, a_pred).ravel()
-        print('confusion_matrix:: ', tn, fp, tp, fn)
+red = np.array(red)
+blue = np.array(blue)
 
-    #figure
-    if not os.path.exists('./picture'):
-        os.makedirs('./picture')
-    fig, ax = plot_confusion_matrix(np.array([[tp, fn],
-                                              [fp, tn]]))
+plt.hist(blue, bins = 10000, color='b', histtype='step', label = 'Normal')
+plt.hist(red, bins = 10000, color='r', histtype='step', label = 'Abnormal')
+plt.legend()
 
-    plt.savefig(f'./picture/aug_confusion_matrix_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
-    plt.close()
-
-    tp_loss = np.array(tp_loss)
-    tn_loss = np.array(tn_loss)
-    fp_loss = np.array(fp_loss)
-    fn_loss = np.array(fn_loss)
-
-    plt.hist(tp_loss, bins = 10000, color='b', histtype='step', label = 'true_positive')
-    plt.hist(tn_loss, bins = 10000, color='y', histtype='step', label = 'true_negative')
-    plt.hist(fp_loss, bins = 10000, color='r', histtype='step', label = 'false_positive')
-    plt.hist(fn_loss, bins = 10000, color='g', histtype='step', label = 'false_negative')
-    plt.legend()
-
-    plt.savefig(f'./picture/aug_hist_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
-    plt.close()
+plt.savefig(f'./picture/aug_hist_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
+plt.close()
 
 
 
