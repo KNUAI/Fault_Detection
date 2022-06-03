@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from mlxtend.plotting import plot_confusion_matrix
 
-from data.data_loader import read_data
-from data.aug import read_all_data
+from data.data_loader import read_data, read_all_data
+from data.aug import read_all_data as aug_data
 from models.model import AE, CAE, CAE2, RAE, CRAE, CRAE2
 
 import argparse
@@ -83,6 +83,38 @@ model.load_state_dict(torch.load(f'./path/{args.data}_{args.model}_fold_{args.fo
 
 #all test
 all_loader = read_all_data(data_path, max_len)
+all_acc_sum = 0
+red = []
+blue = []
+with torch.no_grad():
+    model.eval()
+    for i, (data, data2, target) in enumerate(all_loader):
+        data = data.float().to(device)
+
+        output = model(data)
+        loss = criterion(output, data)
+
+        if target == 1:
+            red.append(loss.detach().cpu().numpy())
+        else:
+            blue.append(loss.detach().cpu().numpy())
+
+#figure
+if not os.path.exists('./picture'):
+    os.makedirs('./picture')
+
+red = np.array(red)
+blue = np.array(blue)
+
+plt.hist(blue, bins = 10000, color='b', histtype='step', label = 'Normal')
+plt.hist(red, bins = 10000, color='r', histtype='step', label = 'Abnormal')
+plt.legend()
+
+plt.savefig(f'./picture/all_hist_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
+plt.close()
+
+#all aug test
+all_loader = aug_data(data_path, max_len)
 all_acc_sum = 0
 red = []
 blue = []
