@@ -29,6 +29,7 @@ parser.add_argument('--lr', type=float, default=1e-4, help='learning_rate')
 parser.add_argument('--r_model', type=str, default='LSTM', help='rnn model')
 parser.add_argument('--use_all', action='store_true', help='use all data for detection', default=False)
 parser.add_argument('--patience', type=int, default=3, help='patience of early_stopping')
+parser.add_argument('--evaluate', action='store_false', default=True)
 parser.add_argument('--gpus', type=str, default='0', help='gpu numbers')
 
 args = parser.parse_args()
@@ -78,61 +79,62 @@ model.to(device)
 criterion = nn.MSELoss().to(device)
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-#train
-total_loss = 0
-train_loss = []
-i = 1
-stop_loss = np.inf
-count = 0
-for epoch in range(args.epoch):
+if args.evaluate:
     #train
-    model.train()
-    for data, target in train_loader:
-        data = data.float().to(device)
-        target = target.float().to(device)
-
-        output = model(data)
-        loss = criterion(output, target)
-
-        total_loss += loss
-        train_loss.append(total_loss/i)
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if i % 10 == 0:
-            print(f'Epoch: {epoch+1}\t Train Step: {i:3d}\t Loss: {loss:.4f}')
-        i += 1
-    print(f'Epoch: {epoch+1} finished')
-
-    #validation
-    with torch.no_grad():
-        model.eval()
-        valid_loss = []
-        for data, target in valid_loader:
+    total_loss = 0
+    train_loss = []
+    i = 1
+    stop_loss = np.inf
+    count = 0
+    for epoch in range(args.epoch):
+        #train
+        model.train()
+        for data, target in train_loader:
             data = data.float().to(device)
             target = target.float().to(device)
     
             output = model(data)
             loss = criterion(output, target)
-            valid_loss.append(loss.detach().cpu().numpy())
     
-    #early_stopping
-    if not os.path.exists('./path'):
-        os.makedirs('./path')
-    if np.mean(valid_loss) < stop_loss:
-        stop_loss = np.mean(valid_loss)
-        print('best_loss:: {:.4f}'.format(stop_loss))
-        torch.save(model.state_dict(), f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_batch_{args.batch_size}_lr_{args.lr}.pth')
-        count = 0
-    else:
-        count += 1
-        print(f'EarlyStopping counter: {count} out of {args.patience}')
-        print(f'best_loss:: {stop_loss:.4f}\t valid_loss:: {np.mean(valid_loss):.4f}' )
-        if count >= args.patience:
-            print('Ealry stopping')
-            break
+            total_loss += loss
+            train_loss.append(total_loss/i)
+    
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+    
+            if i % 10 == 0:
+                print(f'Epoch: {epoch+1}\t Train Step: {i:3d}\t Loss: {loss:.4f}')
+            i += 1
+        print(f'Epoch: {epoch+1} finished')
+    
+        #validation
+        with torch.no_grad():
+            model.eval()
+            valid_loss = []
+            for data, target in valid_loader:
+                data = data.float().to(device)
+                target = target.float().to(device)
+        
+                output = model(data)
+                loss = criterion(output, target)
+                valid_loss.append(loss.detach().cpu().numpy())
+        
+        #early_stopping
+        if not os.path.exists('./path'):
+            os.makedirs('./path')
+        if np.mean(valid_loss) < stop_loss:
+            stop_loss = np.mean(valid_loss)
+            print('best_loss:: {:.4f}'.format(stop_loss))
+            torch.save(model.state_dict(), f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_batch_{args.batch_size}_lr_{args.lr}.pth')
+            count = 0
+        else:
+            count += 1
+            print(f'EarlyStopping counter: {count} out of {args.patience}')
+            print(f'best_loss:: {stop_loss:.4f}\t valid_loss:: {np.mean(valid_loss):.4f}' )
+            if count >= args.patience:
+                print('Ealry stopping')
+                break
 
 model.load_state_dict(torch.load(f'./path/{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_batch_{args.batch_size}_lr_{args.lr}.pth'))
 
@@ -183,6 +185,29 @@ with torch.no_grad():
     print(f'  Test Accuracy: {100 * test_acc_sum / len(test_loader.dataset):.4f}')
     tp, fn, fp, tn = confusion_matrix(y_true, y_pred).ravel()
     print('confusion_matrix:: ', tn, fp, tp, fn)
+
+#figure
+if not os.path.exists('./picture'):
+    os.makedirs('./picture')
+fig, ax = plot_confusion_matrix(np.array([[tp, fn],
+                                          [fp, tn]]))
+
+plt.savefig(f'./picture/confusion_matrix_test_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
+plt.close()
+
+tp_loss = np.array(tp_loss)
+tn_loss = np.array(tn_loss)
+fp_loss = np.array(fp_loss)
+fn_loss = np.array(fn_loss)
+
+plt.hist(tp_loss, bins = 10000, color='b', histtype='step', label = 'true_positive')
+plt.hist(tn_loss, bins = 10000, color='y', histtype='step', label = 'true_negative')
+plt.hist(fp_loss, bins = 10000, color='r', histtype='step', label = 'false_positive')
+plt.hist(fn_loss, bins = 10000, color='g', histtype='step', label = 'false_negative')
+plt.legend()
+
+plt.savefig(f'./picture/hist_test_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
+plt.close()
 
 #all test
 if args.use_all == True:
