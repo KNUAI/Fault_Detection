@@ -157,6 +157,10 @@ print('threshold:: ', threshold)
 test_acc_sum = 0
 y_true = []
 y_pred = []
+tp_loss = []
+tn_loss = []
+fp_loss = []
+fn_loss = []
 with torch.no_grad():
     model.eval()
     for i, (data, target, label) in enumerate(test_loader):
@@ -171,13 +175,19 @@ with torch.no_grad():
         if loss > threshold:
             logits = 1
             #print(i, 'th wafer is defective.')
+            if label == 1:
+                tn_loss.append(loss.detach().cpu().numpy())
+            else: fn_loss.append(loss.detach().cpu().numpy())
         else:
             logits = 0
             #print(i, 'th wafer is OK')
             if label == 1:
+                fp_loss.append(loss.detach().cpu().numpy())
                 print(i, 'th wafer is originally defective!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 print('loss:: ', loss)
-        
+            else:
+                tp_loss.append(loss.detach().cpu().numpy())
+    
         y_true.append(label)
         y_pred.append(logits)
         
@@ -276,7 +286,3 @@ if args.use_all == True:
 
     plt.savefig(f'./picture/hist_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
     plt.close()
-
-
-
-
