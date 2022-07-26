@@ -214,6 +214,9 @@ plt.hist(tp_loss, bins = 10000, color='b', histtype='step', label = 'true_positi
 plt.hist(tn_loss, bins = 10000, color='y', histtype='step', label = 'true_negative')
 plt.hist(fp_loss, bins = 10000, color='r', histtype='step', label = 'false_positive')
 plt.hist(fn_loss, bins = 10000, color='g', histtype='step', label = 'false_negative')
+plt.xlabel('MSELoss')
+plt.ylabel('# of data')
+plt.title('Distribution of reconstruction loss')
 plt.legend()
 
 plt.savefig(f'./picture/hist_test_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
@@ -286,3 +289,7 @@ if args.use_all == True:
 
     plt.savefig(f'./picture/hist_{args.data}_{args.model}_fold_{args.fold}_latent_{args.latent_size}_th_rate_{args.threshold_rate}_batch_{args.batch_size}_lr_{args.lr}.png')
     plt.close()
+
+
+
+
