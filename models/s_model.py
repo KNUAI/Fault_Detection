@@ -104,7 +104,7 @@ class RNN(nn.Module):
         else:
             print('No RNN Model')
         self.linear3 = nn.Sequential(
-            nn.Linear(latent_size, num_class),
+            nn.Linear(latent_size*max_len, latent_size),
             nn.LeakyReLU(0.9)
         )
         self.classifier = nn.Sequential(
