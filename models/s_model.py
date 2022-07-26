@@ -92,6 +92,7 @@ class CNN2(nn.Module):
 class RNN(nn.Module):
     def __init__(self, input_size, latent_size, num_class, max_len, num_layers, r_model):
         super(RNN, self).__init__()
+        self.max_len = max_len
         self.linear1 = nn.Sequential(
             nn.Linear(input_size*max_len, latent_size*2 * max_len),
             nn.LeakyReLU(0.9)
